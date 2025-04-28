@@ -1,0 +1,77 @@
+-- 1. Retrive the total number of orders placed.
+SELECT COUNT(transaction_id) as total_orders FROM coffee_shop_sales;
+-- 2.  Calculate total revenue generated from sales.
+SELECT 
+    ROUND(SUM(transaction_qty * unit_price), 2) AS total_revenue
+FROM
+    coffee_shop_sales;
+-- 3.  Identify the  highest-priced product.
+SELECT 
+    product_type, product_id, product_category, unit_price
+FROM
+    coffee_shop_sales
+ORDER BY unit_price DESC
+LIMIT 1;
+-- 4. Identify the most common coffee type ordered. 
+SELECT 
+    COUNT(transaction_qty) AS transaction_count, product_type
+FROM
+    coffee_shop_sales
+GROUP BY product_type
+ORDER BY transaction_count DESC
+LIMIT 1;
+-- 5. List the top 5 most ordered coffee types along with their quantities.
+SELECT 
+    product_type AS coffee_type,
+    SUM(transaction_qty) AS quantity
+FROM
+    coffee_shop_sales
+GROUP BY coffee_type
+ORDER BY quantity DESC
+LIMIT 5;
+-- 6. Determine the distribution of orders by hour of the day.
+SELECT 
+    HOUR(transaction_time) AS transaction_hour,
+    COUNT(transaction_qty) AS order_count
+FROM
+    coffee_shop_sales
+GROUP BY transaction_hour;
+-- 7. Find the category-wise distribution of products.
+SELECT 
+    product_category, COUNT(transaction_qty)
+FROM
+    coffee_shop_sales
+GROUP BY product_category;
+-- 8. Group the orders by date and calculate the average number of orders per day. 
+SELECT 
+    ROUND(AVG(order_count),0) as average_order_per_day
+FROM
+    (SELECT 
+        SUM(transaction_qty) AS order_count, transaction_date
+    FROM
+        coffee_shop_sales
+    GROUP BY transaction_date) AS order_quantity;
+--  9. Determine the top 3 most ordered product type based on revenue.  
+SELECT 
+    product_type, ROUND(SUM((transaction_qty * unit_price)),2) AS revenue
+FROM
+    coffee_shop_sales
+GROUP BY product_type
+ORDER BY revenue DESC
+LIMIT 3;
+-- 10. Analyze the cumulative revenue genereated over time.
+  SELECT transaction_date, ROUND(sum(revenue) over(order by transaction_date),2) as cum_revenue 
+  FROM (SELECT  transaction_date, sum(transaction_qty*unit_price) as revenue
+  FROM coffee_shop_sales
+  GROUP BY transaction_date
+  ORDER BY revenue) as sales;
+--  11. Determine the top 3 most ordered product type based on revenue for each product category.
+SELECT product_type, product_category, revenue 
+FROM
+(SELECT product_category, product_type, revenue, rank() over(partition by product_category order by revenue desc) as Product_Rank
+FROM (SELECT product_category, product_type,
+ROUND(sum(transaction_qty*unit_price),2) as revenue
+FROM coffee_shop_sales
+GROUP BY product_category, product_type
+ORDER BY revenue DESC) as a) as b
+WHERE Product_Rank<=3;
